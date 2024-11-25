@@ -4,73 +4,46 @@ import 'package:moneytracker/hive/models/expenses_model.dart';
 import 'package:moneytracker/hive/models/income_model.dart';
 
 class Services {
-  final String _boxIncomeName = "income";
-  final String _boxExpensesName = "expenses";
-  Future<Box<IncomeModel>> get _boxIncome async =>
-      await Hive.openBox<IncomeModel>(_boxIncomeName);
-  Future<Box<ExpensesModel>> get _boxExpenses async =>
-      await Hive.openBox<ExpensesModel>(_boxExpensesName);
-  // Future for expenses need to make Model
+  final Box<IncomeModel> _incomeBox = Hive.box<IncomeModel>('income');
+  final Box<ExpensesModel> _expensesBox = Hive.box<ExpensesModel>('expenses');
 
-  // Income
-  Future<void> addIncome(IncomeModel incomeModel) async {
-    var box = await _boxIncome;
-    await box.add(incomeModel);
+  void addIncome(IncomeModel incomeModel) {
+    _incomeBox.add(incomeModel);
   }
 
-  Future<List<IncomeModel>> getIncome() async {
-    var box = await _boxIncome;
-    return box.values.toList();
+  List<IncomeModel> getIncome() {
+    return _incomeBox.values.toList();
   }
 
-  Future<ValueListenable<Box<IncomeModel>>> getincomeListenable() async {
-    var box = await _boxIncome;
-    return box.listenable();
+  ValueListenable<Box<IncomeModel>> getIncomeListenable() {
+    return _incomeBox.listenable();
   }
 
-  Future<IncomeModel> getIncomeIndex(int index) async {
-    var box = await _boxIncome;
-    return box.getAt(index)!;
+  void updateIncome(int index, IncomeModel incomeModel) {
+    _incomeBox.putAt(index, incomeModel);
   }
 
-  Future<void> updateIncome(int index, IncomeModel incomeModel) async {
-    var box = await _boxIncome;
-    await box.putAt(index, incomeModel);
+  void deleteIncome(int index) {
+    _incomeBox.deleteAt(index);
   }
 
-  Future<void> deleteIncome(int index) async {
-    var box = await _boxIncome;
-    await box.deleteAt(index);
+  void addExpenses(ExpensesModel expensesModel) {
+    _expensesBox.add(expensesModel);
   }
 
-  // Expenses
-  Future<void> addExpenses(ExpensesModel expensesModel) async {
-    var box = await _boxExpenses;
-    await box.add(expensesModel);
+  List<ExpensesModel> getExpenses() {
+    return _expensesBox.values.toList();
   }
 
-  Future<List<ExpensesModel>> getExpenses() async {
-    var box = await _boxExpenses;
-    return box.values.toList();
+  ValueListenable<Box<ExpensesModel>> getExpensesListenable() {
+    return _expensesBox.listenable();
   }
 
-  Future<ValueListenable<Box<ExpensesModel>>> getexpensesListenable() async {
-    var box = await _boxExpenses;
-    return box.listenable();
+  void updateExpenses(int index, ExpensesModel expensesModel) {
+    _expensesBox.putAt(index, expensesModel);
   }
 
-  Future<ExpensesModel> getExpensesIndex(int index) async {
-    var box = await _boxExpenses;
-    return box.getAt(index)!;
-  }
-
-  Future<void> updateExpenses(int index, ExpensesModel expensesModel) async {
-    var box = await _boxExpenses;
-    await box.putAt(index, expensesModel);
-  }
-
-  Future<void> deleteExpenses(int index) async {
-    var box = await _boxExpenses;
-    await box.deleteAt(index);
+  void deleteExpenses(int index) {
+    _expensesBox.deleteAt(index);
   }
 }

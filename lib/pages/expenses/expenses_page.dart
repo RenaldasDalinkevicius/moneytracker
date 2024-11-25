@@ -17,7 +17,7 @@ class ExpensesPage extends StatefulWidget {
 }
 
 class _ExpensesPageState extends State<ExpensesPage> {
-  List<ExpensesModel> sortedList = [];
+  late List<ExpensesModel> sortedList;
   int sortOption = 0;
   Icon getIcon(IconData icon) => Icon(icon, size: 20);
   final Map<int, int Function(ExpensesModel, ExpensesModel)> sortingMethods = {
@@ -37,97 +37,93 @@ class _ExpensesPageState extends State<ExpensesPage> {
             MaterialPageRoute(builder: (context) => const NewExpensesPage())),
         child: const Icon(Icons.add),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-            child: PopupMenuButton<int>(
-              splashRadius: 25,
-              iconSize: 25,
-              icon: const Icon(Icons.more_horiz),
-              onSelected: (int value) {
-                setState(() {
-                  sortOption = value;
-                });
-              },
-              itemBuilder: (BuildContext context) => [
-                PopupMenuItem<int>(
-                  value: 0,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text("Date"), getIcon(Icons.arrow_upward)],
+      body: Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+          child: ValueListenableBuilder(
+            valueListenable: Services().getExpensesListenable(),
+            builder: (context, box, _) {
+              if (box.isEmpty) {
+                return Center(
+                    child: Text(
+                        "No expenses found, add income with the action button at the bottom right"));
+              }
+              final List<ExpensesModel> expenses = box.values.toList();
+              sortedList = List.from(expenses);
+              sortedList.sort(sortingMethods[sortOption]!);
+              return Column(
+                children: [
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: PopupMenuButton<int>(
+                      splashRadius: 25,
+                      iconSize: 25,
+                      icon: const Icon(Icons.more_horiz),
+                      onSelected: (int value) {
+                        setState(() {
+                          sortOption = value;
+                        });
+                      },
+                      itemBuilder: (BuildContext context) => [
+                        PopupMenuItem<int>(
+                          value: 0,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [Text("Date"), getIcon(Icons.arrow_upward)],
+                          ),
+                        ),
+                        PopupMenuItem<int>(
+                          value: 1,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [Text("Date"), getIcon(Icons.arrow_downward)],
+                          ),
+                        ),
+                        PopupMenuItem<int>(
+                          value: 2,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [Text("Price"), getIcon(Icons.arrow_upward)],
+                          ),
+                        ),
+                        PopupMenuItem<int>(
+                          value: 3,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [Text("Price"), getIcon(Icons.arrow_downward)],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                PopupMenuItem<int>(
-                  value: 1,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text("Date"), getIcon(Icons.arrow_downward)],
-                  ),
-                ),
-                PopupMenuItem<int>(
-                  value: 2,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text("Price"), getIcon(Icons.arrow_upward)],
-                  ),
-                ),
-                PopupMenuItem<int>(
-                  value: 3,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text("Price"), getIcon(Icons.arrow_downward)],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-              child: FutureBuilder(
-                  future: Services().getexpensesListenable(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    } else if (!snapshot.hasData) {
-                      return const Center(child: Text("No expenses saved"));
-                    }
-                    return ValueListenableBuilder(
-                      valueListenable: snapshot.data!,
-                      builder: (context, box, _) {
-                        final List<ExpensesModel> expenses = box.values.toList();
-                        sortedList = List.from(expenses);
-                        sortedList.sort(sortingMethods[sortOption]!);
-                        return ListView.builder(
-                          padding: EdgeInsets.only(bottom: kFloatingActionButtonMargin + 56),
-                          shrinkWrap: true,
-                          itemCount: sortedList.length,
-                          itemBuilder: (context, index) {
-                            final expense = sortedList[index];
-                            final originalIndex =
-                                box.values.toList().indexOf(expense);
-                            return customListTile(
-                              title:
-                                  "${expense.price.toString()} ${getCurrency(context)}",
-                              subtitle: expense.what,
-                              trailing: Text(
-                                  DateFormat('yyyy-MM-dd').format(expense.date)),
-                              onClicked: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                      builder: ((context) => EditExpensesPage(
-                                          index: originalIndex)))),
-                            );
-                          },
+                  Expanded(
+                    child: ListView.builder(
+                      padding: EdgeInsets.only(
+                          bottom: kFloatingActionButtonMargin + 56),
+                      shrinkWrap: true,
+                      itemCount: sortedList.length,
+                      itemBuilder: (context, index) {
+                        final expense = sortedList[index];
+                        final originalIndex =
+                            box.values.toList().indexOf(expense);
+                        return customListTile(
+                          title:
+                              "${expense.price.toString()} ${getCurrency(context)}",
+                          subtitle: expense.what,
+                          trailing: Text(
+                              DateFormat('yyyy-MM-dd').format(expense.date)),
+                          onClicked: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: ((context) =>
+                                      EditExpensesPage(index: originalIndex)))),
                         );
                       },
-                    );
-                  }),
-            ),
-          )
-        ],
-      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          )),
     );
   }
 }

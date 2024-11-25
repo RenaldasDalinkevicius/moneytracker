@@ -17,7 +17,7 @@ class IncomePage extends StatefulWidget {
 }
 
 class _IncomePageState extends State<IncomePage> {
-  List<IncomeModel> sortedList = [];
+  late List<IncomeModel> sortedList;
   int sortOption = 0;
   Icon getIcon(IconData icon) => Icon(icon, size: 20);
   final Map<int, int Function(IncomeModel, IncomeModel)> sortingMethods = {
@@ -37,98 +37,104 @@ class _IncomePageState extends State<IncomePage> {
             MaterialPageRoute(builder: (context) => const NewIncomePage())),
         child: const Icon(Icons.add),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-            child: PopupMenuButton<int>(
-              splashRadius: 25,
-              iconSize: 25,
-              icon: const Icon(Icons.more_horiz),
-              onSelected: (int value) {
-                setState(() {
-                  sortOption = value;
-                });
-              },
-              itemBuilder: (BuildContext context) => [
-                PopupMenuItem<int>(
-                  value: 0,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text("Date"), getIcon(Icons.arrow_upward)],
+      body: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+          child: ValueListenableBuilder(
+            valueListenable: Services().getIncomeListenable(),
+            builder: (context, box, _) {
+              if (box.isEmpty) {
+                return const Center(
+                    child: Text(
+                        "No income found, add income with the action button at the bottom right"));
+              }
+              final List<IncomeModel> expenses = box.values.toList();
+              sortedList = List.from(expenses);
+              sortedList.sort(sortingMethods[sortOption]!);
+              return Column(
+                children: [
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: PopupMenuButton<int>(
+                      splashRadius: 25,
+                      iconSize: 25,
+                      icon: const Icon(Icons.more_horiz),
+                      onSelected: (int value) {
+                        setState(() {
+                          sortOption = value;
+                        });
+                      },
+                      itemBuilder: (BuildContext context) => [
+                        PopupMenuItem<int>(
+                          value: 0,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text("Date"),
+                              getIcon(Icons.arrow_upward)
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<int>(
+                          value: 1,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text("Date"),
+                              getIcon(Icons.arrow_downward)
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<int>(
+                          value: 2,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text("Amount"),
+                              getIcon(Icons.arrow_upward)
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<int>(
+                          value: 3,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text("Amount"),
+                              getIcon(Icons.arrow_downward)
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                PopupMenuItem<int>(
-                  value: 1,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text("Date"), getIcon(Icons.arrow_downward)],
-                  ),
-                ),
-                PopupMenuItem<int>(
-                  value: 2,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text("Amount"), getIcon(Icons.arrow_upward)],
-                  ),
-                ),
-                PopupMenuItem<int>(
-                  value: 3,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text("Amount"), getIcon(Icons.arrow_downward)],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-              child: FutureBuilder(
-                  future: Services().getincomeListenable(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    } else if (!snapshot.hasData) {
-                      return const Center(child: Text("No income saved"));
-                    }
-                    return ValueListenableBuilder(
-                      valueListenable: snapshot.data!,
-                      builder: (context, box, _) {
-                        final List<IncomeModel> expenses = box.values.toList();
-                        sortedList = List.from(expenses);
-                        sortedList.sort(sortingMethods[sortOption]!);
-                        return ListView.builder(
-                          padding: EdgeInsets.only(
-                              bottom: kFloatingActionButtonMargin + 56),
-                          shrinkWrap: true,
-                          itemCount: sortedList.length,
-                          itemBuilder: (context, index) {
-                            final income = sortedList[index];
-                            final originalIndex =
-                                box.values.toList().indexOf(income);
-                            return customListTile(
-                              title:
-                                  "${income.amount.toString()} ${getCurrency(context)}",
-                              subtitle: income.from,
-                              trailing: Text(
-                                  DateFormat('yyyy-MM-dd').format(income.date)),
-                              onClicked: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                      builder: ((context) =>
-                                          EditIncomePage(index: originalIndex)))),
-                            );
-                          },
+                  Expanded(
+                    child: ListView.builder(
+                      padding: EdgeInsets.only(
+                          bottom: kFloatingActionButtonMargin + 56),
+                      shrinkWrap: true,
+                      itemCount: sortedList.length,
+                      itemBuilder: (context, index) {
+                        final income = sortedList[index];
+                        final originalIndex =
+                            box.values.toList().indexOf(income);
+                        return customListTile(
+                          title:
+                              "${income.amount.toString()} ${getCurrency(context)}",
+                          subtitle: income.from,
+                          trailing: Text(
+                              DateFormat('yyyy-MM-dd').format(income.date)),
+                          onClicked: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: ((context) =>
+                                      EditIncomePage(index: originalIndex)))),
                         );
                       },
-                    );
-                  }),
-            ),
-          )
-        ],
-      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          )),
     );
   }
 }

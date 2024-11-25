@@ -45,10 +45,10 @@ class _NewIncomePage extends State<NewIncomePage> {
       });
     }
   }
-    void addIncomeFunction() async {
+    void addIncomeFunction() {
       if (_incomeAmountController.text.isNotEmpty && _incomeDateController.text.isNotEmpty && _incomeFromController.text.isNotEmpty) {
         IncomeModel income = IncomeModel(from: _incomeFromController.text.trim(), amount: int.parse(_incomeAmountController.text), date: DateTime.parse(_incomeDateController.text), note: _incomeNoteController.text);
-        await Services().addIncome(income);
+        Services().addIncome(income);
         Snackbar.showSuccessSnack(context, "Income added");
         Navigator.pop(context);
       } else {

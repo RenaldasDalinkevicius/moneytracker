@@ -18,23 +18,34 @@ class sfCartesianChart extends StatefulWidget {
 }
 
 class _sfCartesianChart extends State<sfCartesianChart> {
-  late List<CartesianChartData> chartData = <CartesianChartData>[];
-  List<int> availableYears = [];
-  List<int> availableMonths = [];
+  late List<CartesianChartData> chartData = [];
+  late List<int> availableYears;
+  late List<int> availableMonths;
   late int selectedYear;
   late int selectedMonth;
   @override
   void initState() {
     super.initState();
+    _initializeChart();
+  }
+
+  @override
+  void didUpdateWidget(covariant sfCartesianChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.expensesData != widget.expensesData ||
+        oldWidget.incomeData != widget.incomeData) {
+      _initializeChart();
+    }
+  }
+
+  void _initializeChart() {
     availableYears = getUniqueYears();
     availableMonths = getUniqueMonthsForYear(availableYears.first);
     selectedYear = availableYears.first;
     selectedMonth = availableMonths.first;
-    mergeIncomeAndExpenses(
-      selectedYear,
-      selectedMonth
-    );
+    mergeIncomeAndExpenses(selectedYear, selectedMonth);
   }
+
   List<int> getUniqueYears() {
     Set<int> uniqueYears = {};
     for (IncomeModel income in widget.incomeData) {
@@ -43,9 +54,10 @@ class _sfCartesianChart extends State<sfCartesianChart> {
     for (ExpensesModel expense in widget.expensesData) {
       uniqueYears.add(expense.date.year);
     }
-    return uniqueYears.toList();
+    return uniqueYears.toList()..sort((a, b) => b.compareTo(a));
   }
-    List<int> getUniqueMonthsForYear(int year) {
+
+  List<int> getUniqueMonthsForYear(int year) {
     Set<int> uniqueMonths = {};
     for (IncomeModel income in widget.incomeData) {
       if (income.date.year == year) {
@@ -57,37 +69,37 @@ class _sfCartesianChart extends State<sfCartesianChart> {
         uniqueMonths.add(expense.date.month);
       }
     }
-    return uniqueMonths.toList();
+    return uniqueMonths.toList()..sort((a, b) => b.compareTo(a));
   }
-  void mergeIncomeAndExpenses(
-    int _year,
-    int _month) {
-  Map<DateTime, CartesianChartData> chartMap = {};
-  for (IncomeModel income in widget.incomeData) {
-    if (income.date.year == _year && income.date.month == selectedMonth) {
-      DateTime dateKey = DateTime(income.date.year, income.date.month);
-      if (chartMap.containsKey(dateKey)) {
-        chartMap[dateKey]!.income += income.amount;
-      } else {
-        chartMap[dateKey] = CartesianChartData(dateKey, income.amount, 0);
+
+  void mergeIncomeAndExpenses(int year, int month) {
+    Map<DateTime, CartesianChartData> chartMap = {};
+    for (IncomeModel income in widget.incomeData) {
+      if (income.date.year == year && income.date.month == month) {
+        DateTime dateKey = DateTime(income.date.year, income.date.month);
+        if (chartMap.containsKey(dateKey)) {
+          chartMap[dateKey]!.income += income.amount;
+        } else {
+          chartMap[dateKey] = CartesianChartData(dateKey, income.amount, 0);
+        }
       }
     }
-  }
-  for (ExpensesModel expense in widget.expensesData) {
-    if (expense.date.year == _year && expense.date.month == selectedMonth) {
-      DateTime dateKey = DateTime(expense.date.year, expense.date.month);
-      if (chartMap.containsKey(dateKey)) {
-        chartMap[dateKey]!.expense += expense.price;
-      } else {
-        chartMap[dateKey] = CartesianChartData(dateKey, 0, expense.price);
+    for (ExpensesModel expense in widget.expensesData) {
+      if (expense.date.year == year && expense.date.month == month) {
+        DateTime dateKey = DateTime(expense.date.year, expense.date.month);
+        if (chartMap.containsKey(dateKey)) {
+          chartMap[dateKey]!.expense += expense.price;
+        } else {
+          chartMap[dateKey] = CartesianChartData(dateKey, 0, expense.price);
+        }
       }
     }
+    setState(() {
+      chartData = chartMap.values.toList();
+    });
   }
-  setState(() {
-    chartData = chartMap.values.toList();
-  });
-}
-String formatLargeNumber(double value) {
+
+  String formatLargeNumber(double value) {
     if (value >= 1e9) {
       return '${(value / 1e9).toStringAsFixed(1)}B';
     } else if (value >= 1e6) {
@@ -98,6 +110,7 @@ String formatLargeNumber(double value) {
       return value.toStringAsFixed(0);
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -150,7 +163,8 @@ String formatLargeNumber(double value) {
                         return availableMonths.map((int month) {
                           return PopupMenuItem<int>(
                             value: month,
-                            child: Text(DateFormat.MMM().format(DateTime(0, month))),
+                            child: Text(
+                                DateFormat.MMM().format(DateTime(0, month))),
                           );
                         }).toList();
                       },
@@ -167,30 +181,31 @@ String formatLargeNumber(double value) {
                   primaryYAxis: NumericAxis(
                     axisLabelFormatter: (AxisLabelRenderDetails details) {
                       return ChartAxisLabel(
-                        formatLargeNumber(details.value.toDouble()), const TextStyle()
-                      );
+                          formatLargeNumber(details.value.toDouble()),
+                          const TextStyle());
                     },
                   ),
                   series: <CartesianSeries>[
                     ColumnSeries<CartesianChartData, String>(
-                      dataSource: chartData,
-                      color: Colors.redAccent,
-                      dataLabelSettings: DataLabelSettings(isVisible: true),
-                      spacing: 0.5,
-                      dataLabelMapper:(CartesianChartData data, _) => formatLargeNumber(data.expense.toDouble()),
-                      xValueMapper: (CartesianChartData data, _) =>
-                        DateFormat.MMMM().format(data.date),
-                      yValueMapper: (CartesianChartData data, _) =>
-                        data.expense
-                    ),
+                        dataSource: chartData,
+                        color: Colors.redAccent,
+                        dataLabelSettings: DataLabelSettings(isVisible: true),
+                        spacing: 0.5,
+                        dataLabelMapper: (CartesianChartData data, _) =>
+                            formatLargeNumber(data.expense.toDouble()),
+                        xValueMapper: (CartesianChartData data, _) =>
+                            DateFormat.MMMM().format(data.date),
+                        yValueMapper: (CartesianChartData data, _) =>
+                            data.expense),
                     ColumnSeries<CartesianChartData, String>(
                       dataSource: chartData,
                       color: Colors.greenAccent,
                       dataLabelSettings: DataLabelSettings(isVisible: true),
                       spacing: 0.5,
-                      dataLabelMapper:(CartesianChartData data, _) => formatLargeNumber(data.income.toDouble()),
+                      dataLabelMapper: (CartesianChartData data, _) =>
+                          formatLargeNumber(data.income.toDouble()),
                       xValueMapper: (CartesianChartData data, _) =>
-                        DateFormat.MMMM().format(data.date),
+                          DateFormat.MMMM().format(data.date),
                       yValueMapper: (CartesianChartData data, _) => data.income,
                     ),
                   ]),

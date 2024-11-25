@@ -7,35 +7,45 @@ import 'package:moneytracker/pages/home/widgets/chart_data.dart';
 import 'package:moneytracker/providers/currency_service.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-class sfCirculartChart extends StatefulWidget {
-  const sfCirculartChart({super.key, required this.expensesData, required this.incomeData});
+class sfCircularChart extends StatefulWidget {
+  const sfCircularChart({super.key, required this.expensesData, required this.incomeData});
   final List<ExpensesModel> expensesData;
   final List<IncomeModel> incomeData;
 
   @override
-  State<sfCirculartChart> createState() => _SfCirculartChart();
+  State<sfCircularChart> createState() => _SfCirculartChart();
 }
 
-class _SfCirculartChart extends State<sfCirculartChart> {
-  late int totalIncome = 0;
-  late int totalExpenses = 0;
-  final List<CircularChartData> chartData = [];
+class _SfCirculartChart extends State<sfCircularChart> {
+  late int totalIncome;
+  late int totalExpenses;
 
   @override
   void initState() {
     super.initState();
-    updateArr();
+    calculateTotals();
   }
 
-  Future<void> updateArr() async {
-    for (ExpensesModel expense in widget.expensesData) {
-      totalExpenses += expense.price;
+void calculateTotals() {
+    totalExpenses = widget.expensesData.fold(0, (sum, expense) => sum + expense.price);
+    totalIncome = widget.incomeData.fold(0, (sum, income) => sum + income.amount);
+  }
+
+  List<CircularChartData> get chartData {
+    return [
+      CircularChartData("Expenses", totalExpenses, Colors.redAccent),
+      CircularChartData("Income", totalIncome, Colors.greenAccent),
+    ];
+  }
+
+@override
+  void didUpdateWidget(covariant sfCircularChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.expensesData != widget.expensesData || oldWidget.incomeData != widget.incomeData) {
+      setState(() {
+        calculateTotals();
+      });
     }
-    for (IncomeModel income in widget.incomeData) {
-      totalIncome += income.amount;
-    }
-    chartData.add(CircularChartData("Expenses", totalExpenses, Colors.redAccent));
-    chartData.add(CircularChartData("Income", totalIncome, Colors.greenAccent));
   }
 
   @override

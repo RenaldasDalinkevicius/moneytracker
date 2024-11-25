@@ -45,10 +45,10 @@ class _NewExpensesPage extends State<NewExpensesPage> {
       });
     }
   }
-    void addExpenseFunction() async {
+    void addExpenseFunction() {
       if (_expensesPriceController.text.isNotEmpty && _expensesDateController.text.isNotEmpty && _expensesWhatController.text.isNotEmpty) {
         ExpensesModel expense = ExpensesModel(what: _expensesWhatController.text.trim(), price: int.parse(_expensesPriceController.text), date: DateTime.parse(_expensesDateController.text), note: _expensesNoteController.text);
-        await Services().addExpenses(expense);
+        Services().addExpenses(expense);
         Snackbar.showSuccessSnack(context, "Expense added");
         Navigator.pop(context);
       } else {
